@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.5.0"
+  },
+  "name": "rl_uy",
+  "version": "1.0.0",
+  "description": "Hola esto es una prueba",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pengvn/rl_uy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pengvn/rl_uy/issues"
+  },
+  "homepage": "https://github.com/pengvn/rl_uy#readme"
+}
