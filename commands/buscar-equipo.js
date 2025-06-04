@@ -58,3 +58,8 @@ module.exports = {
     }
   }
 };
+
+// Al crear el embed en modalHandler.js, añade:
+embed.setFooter({
+  text: `ID: ${interaction.user.id} | ${interaction.member.voice.channelId}`
+});

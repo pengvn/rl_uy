@@ -39,19 +39,15 @@ client.once('ready', async () => {
 
 // Manejo de interacciones
 client.on('interactionCreate', async interaction => {
-  if (interaction.isChatInputCommand()) {
-    const command = client.commands.get(interaction.commandName);
-    if (!command) return;
-
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(`❌ Error en comando ${interaction.commandName}:`, error);
-      await interaction.reply({ 
-        content: '⚠️ Ocurrió un error al ejecutar el comando', 
-        ephemeral: true 
+  if (interaction.isButton() && interaction.customId === 'aceptar_busqueda') {
+    // Evitar doble procesamiento
+    if (interaction.message.components.length === 0) {
+      return interaction.reply({
+        content: '⚠️ Esta búsqueda ya fue aceptada',
+        ephemeral: true
       });
     }
+    require('./handlers/buttonHandler').execute(interaction);
   }
 
   // Manejo de modals
