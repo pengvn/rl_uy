@@ -3,8 +3,10 @@ const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = req
 module.exports = {
   data: { name: 'buscar-equipo' },
   async execute(interaction) {
+    await interaction.deferReply({ ephemeral: true }); // Respuesta inmediata
+
     if (!interaction.member.voice.channel) {
-      return interaction.reply({ content: '🎧 ¡Debes estar en un canal de voz!', ephemeral: true });
+      return interaction.editReply({ content: '🎧 ¡Debes estar en un canal de voz!' });
     }
 
     const modal = new ModalBuilder()
@@ -18,5 +20,6 @@ module.exports = {
 
     modal.addComponents(new ActionRowBuilder().addComponents(plataformaInput));
     await interaction.showModal(modal);
+    await interaction.deleteReply(); // Limpia el "thinking..."
   }
 };
