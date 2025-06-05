@@ -6,60 +6,62 @@ module.exports = {
     description: 'Busca compañeros para jugar Rocket League'
   },
   async execute(interaction) {
-    // 1. Verificar canal de voz
-    if (!interaction.member.voice.channel) {
-      return interaction.reply({
-        content: '🎧 ¡Debes estar en un canal de voz para usar este comando!',
-        ephemeral: true
-      });
-    }
-
-    // 2. Crear modal
-    const modal = new ModalBuilder()
-      .setCustomId('buscarEquipoModal')
-      .setTitle('Configura tu búsqueda');
-
-    // 3. Componentes del modal
-    const plataformaInput = new TextInputBuilder()
-      .setCustomId('plataforma')
-      .setLabel('🖥️ Plataforma (PC/PS5/Xbox)')
-      .setStyle(TextInputStyle.Short)
-      .setRequired(true);
-
-    const rangoInput = new TextInputBuilder()
-      .setCustomId('rango')
-      .setLabel('🏆 Rango (Ej: Gran Campeón III)')
-      .setStyle(TextInputStyle.Short)
-      .setRequired(true);
-
-    const jugadoresInput = new TextInputBuilder()
-      .setCustomId('jugadores')
-      .setLabel('#️⃣ Jugadores necesarios (1-3)')
-      .setStyle(TextInputStyle.Short)
-      .setRequired(true);
-
-    // 4. Organizar filas
-    const firstRow = new ActionRowBuilder().addComponents(plataformaInput);
-    const secondRow = new ActionRowBuilder().addComponents(rangoInput);
-    const thirdRow = new ActionRowBuilder().addComponents(jugadoresInput);
-
-    // 5. Añadir componentes al modal
-    modal.addComponents(firstRow, secondRow, thirdRow);
-
-    // 6. Mostrar modal con manejo de errores
+    // 1. Verificar canal de voz con manejo de error mejorado
     try {
+      if (!interaction.member.voice.channel) {
+        return await interaction.reply({
+          content: '🎧 ¡Debes estar en un canal de voz para usar este comando!',
+          ephemeral: true
+        });
+      }
+
+      // 2. Crear modal con validación
+      const modal = new ModalBuilder()
+        .setCustomId(`buscarEquipoModal_${interaction.user.id}`) // ID único por usuario
+        .setTitle('Configura tu búsqueda');
+
+      // 3. Componentes del modal con validación
+      const components = [
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('plataforma')
+            .setLabel('🖥️ Plataforma (PC/PS5/Xbox)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMaxLength(20)
+        ),
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('rango')
+            .setLabel('🏆 Rango (Ej: Gran Campeón III)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMaxLength(30)
+        ),
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('jugadores')
+            .setLabel('#️⃣ Jugadores necesarios (1-3)')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMaxLength(1)
+            .setValue('1') // Valor por defecto
+        )
+      ];
+
+      modal.addComponents(...components);
+
+      // 4. Mostrar modal con protección contra timeouts
       await interaction.showModal(modal);
+      
     } catch (error) {
-      console.error('💥 Error al mostrar modal:', error);
-      await interaction.reply({
-        content: '❌ No se pudo abrir el formulario. Por favor intenta nuevamente.',
-        ephemeral: true
-      });
+      console.error('💥 Error en buscar-equipo:', error);
+      if (!interaction.replied) {
+        await interaction.reply({
+          content: '❌ Error al procesar tu solicitud. Por favor intenta nuevamente.',
+          ephemeral: true
+        });
+      }
     }
   }
 };
-
-// Al crear el embed en modalHandler.js, añade:
-embed.setFooter({
-  text: `ID: ${interaction.user.id} | ${interaction.member.voice.channelId}`
-});

@@ -12,21 +12,24 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
-// Manejo de comandos
+// ─── Manejo de Comandos ──────────────────────────────────
 client.commands = new Map();
 const commandFiles = ['buscar-equipo.js'].map(file => require(`./commands/${file}`));
 commandFiles.forEach(command => {
   client.commands.set(command.data.name, command);
 });
 
-// Eventos
+// ─── Evento Ready ────────────────────────────────────────
 client.once('ready', async () => {
   console.log(`✅ ${client.user.tag} listo!`);
 
-  // Registrar comandos
   try {
     const rest = new REST({ version: '10' }).setToken(token);
     
+    // Limpiar comandos antiguos primero
+    await rest.put(Routes.applicationGuildCommands(client.user.id, guildId), { body: [] });
+    
+    // Registrar solo los comandos necesarios
     await rest.put(
       Routes.applicationGuildCommands(client.user.id, guildId),
       { body: commandFiles.map(c => c.data) }
@@ -37,33 +40,63 @@ client.once('ready', async () => {
   }
 });
 
-// Manejo de interacciones
+// ─── Manejo de Interacciones Mejorado ────────────────────
 client.on('interactionCreate', async interaction => {
-  if (interaction.isButton() && interaction.customId === 'aceptar_busqueda') {
-    // Evitar doble procesamiento
-    if (interaction.message.components.length === 0) {
-      return interaction.reply({
-        content: '⚠️ Esta búsqueda ya fue aceptada',
-        ephemeral: true
+  try {
+    // Comandos slash
+    if (interaction.isChatInputCommand()) {
+      const command = client.commands.get(interaction.commandName);
+      if (!command) return;
+      
+      await command.execute(interaction);
+      return;
+    }
+
+    // Modals
+    if (interaction.isModalSubmit()) {
+      if (interaction.customId.startsWith('buscarEquipoModal_')) {
+        return require('./handlers/modalHandler').execute(interaction);
+      }
+    }
+
+    // Botones
+    if (interaction.isButton()) {
+      if (interaction.customId.startsWith('aceptar_busqueda_')) {
+        // Verificar si ya fue procesado
+        if (interaction.message.components.length === 0) {
+          return interaction.reply({
+            content: '⚠️ Esta búsqueda ya fue aceptada',
+            ephemeral: true
+          });
+        }
+        return require('./handlers/buttonHandler').execute(interaction);
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error en interactionCreate:', error);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({ 
+        content: '⚠️ Ocurrió un error al procesar tu solicitud', 
+        ephemeral: true 
       });
     }
-    require('./handlers/buttonHandler').execute(interaction);
-  }
-
-  // Manejo de modals
-  if (interaction.isModalSubmit()) {
-    require('./handlers/modalHandler').execute(interaction);
-  }
-
-  // Manejo de botones
-  if (interaction.isButton()) {
-    require('./handlers/buttonHandler').execute(interaction);
   }
 });
 
-// Debugging
-client.on('debug', console.log);
-client.on('warn', console.warn);
-client.on('error', console.error);
+// ─── Manejo de Errores Global ────────────────────────────
+process.on('unhandledRejection', error => {
+  console.error('⚠️ Unhandled Rejection:', error);
+});
 
-client.login(token);
+client.on('error', error => {
+  console.error('🚨 Client Error:', error);
+});
+
+// ─── Inicio del Bot ─────────────────────────────────────
+client.login(token)
+  .then(() => console.log('🔗 Conectando a Discord...'))
+  .catch(error => {
+    console.error('⛔ Error de login:', error);
+    process.exit(1);
+  });
